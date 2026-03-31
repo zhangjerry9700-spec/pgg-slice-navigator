@@ -184,7 +184,6 @@ export function generateTaskQuestions(
         selected_option: 0,
         is_correct: true,
         answered_at: new Date().toISOString(),
-        is_bookmarked: false,
       }];
     }
   } else {

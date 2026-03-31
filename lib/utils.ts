@@ -41,3 +41,35 @@ export function shuffleArray<T>(array: T[]): T[] {
   }
   return result;
 }
+
+/**
+ * 计算连续学习天数
+ * @param lastStudyDate - 上次学习日期 (YYYY-MM-DD)
+ * @param currentStreak - 当前连续天数
+ * @returns 更新后的连续天数
+ */
+export function calculateStreak(lastStudyDate: string | undefined, currentStreak: number): number {
+  const today = getTodayString();
+
+  // 首次学习
+  if (!lastStudyDate) {
+    return 1;
+  }
+
+  // 今天已经学习过
+  if (lastStudyDate === today) {
+    return currentStreak;
+  }
+
+  // 昨天学习过，连续天数+1
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+  if (lastStudyDate === yesterdayStr) {
+    return currentStreak + 1;
+  }
+
+  // 断签了，从1开始
+  return 1;
+}

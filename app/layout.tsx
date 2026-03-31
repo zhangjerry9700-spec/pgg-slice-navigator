@@ -12,8 +12,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN">
-      <body className="bg-gray-50 text-gray-900 min-h-screen">
+    <html lang="zh-CN" suppressHydrationWarning>
+      <body className="min-h-screen transition-colors duration-300">
         {children}
       </body>
     </html>

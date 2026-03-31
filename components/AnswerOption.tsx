@@ -18,16 +18,16 @@ export default function AnswerOption({
 
   if (showResult) {
     if (correct) {
-      className += 'border-green-500 bg-green-50 text-green-900';
+      className += 'border-[var(--success-text)] bg-[var(--success-bg)] text-[var(--success-text)]';
     } else if (selected) {
-      className += 'border-red-500 bg-red-50 text-red-900';
+      className += 'border-[var(--error-text)] bg-[var(--error-bg)] text-[var(--error-text)]';
     } else {
-      className += 'border-gray-300 bg-white text-gray-700';
+      className += 'border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-secondary)]';
     }
   } else {
     className += selected
-      ? 'border-gray-800 bg-gray-100 text-gray-900'
-      : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50';
+      ? 'border-[var(--text-primary)] bg-[var(--background)] text-[var(--text-primary)]'
+      : 'border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-secondary)] hover:bg-[var(--background)]';
   }
 
   return (

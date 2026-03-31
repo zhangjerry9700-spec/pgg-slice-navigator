@@ -35,7 +35,6 @@ export interface UserAnswer {
   selected_option: number;
   is_correct: boolean;
   answered_at: string;
-  is_bookmarked: boolean;
 }
 
 export interface MasterySnapshot {
@@ -51,4 +50,16 @@ export interface UserProfile {
   anonymous_id: string;
   daily_goal: number;
   created_at: string;
+  // 连续学习天数追踪
+  streak_count: number;          // 当前连续天数
+  last_study_date: string;       // 上次学习日期 (YYYY-MM-DD)
+  max_streak: number;            // 历史最高连续天数
+}
+
+// 错题本条目
+export interface WrongAnswerEntry {
+  question_id: string;
+  added_at: string;              // 加入错题本时间
+  consecutive_correct: number;   // 连续正确次数（达到3次移除）
+  last_answered_at: string;      // 上次答题时间
 }

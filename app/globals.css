@@ -5,12 +5,46 @@
 :root {
   --background: #fafafa;
   --foreground: #171717;
+  --card-bg: #ffffff;
+  --card-border: #e5e7eb;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --accent-color: #3730a3;
+  --accent-text: #ffffff;
+  --success-bg: #f0fdf4;
+  --success-text: #15803d;
+  --error-bg: #fef2f2;
+  --error-text: #b91c1c;
+  --warning-bg: #fffbeb;
+  --warning-text: #92400e;
+  --info-bg: #eff6ff;
+  --info-text: #1d4ed8;
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+  --card-bg: #1e293b;
+  --card-border: #334155;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --accent-color: #6366f1;
+  --accent-text: #ffffff;
+  --success-bg: #14532d;
+  --success-text: #86efac;
+  --error-bg: #7f1d1d;
+  --error-text: #fca5a5;
+  --warning-bg: #78350f;
+  --warning-text: #fcd34d;
+  --info-bg: #1e3a8a;
+  --info-text: #93c5fd;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 @layer utilities {

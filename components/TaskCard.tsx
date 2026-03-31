@@ -2,7 +2,7 @@ interface TaskCardProps {
   title: string;
   topic: string;
   count: number;
-  tagType: 'weak' | 'review' | 'normal';
+  tagType: 'weak' | 'review' | 'normal' | 'error';
   sourceLabel?: string;
   recommendation?: string;
   onStart: () => void;
@@ -26,6 +26,8 @@ export default function TaskCard({
       ? 'bg-red-50 border-red-200 text-red-700'
       : tagType === 'review'
       ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
+      : tagType === 'error'
+      ? 'bg-orange-50 border-orange-200 text-orange-700'
       : 'bg-gray-100 border-gray-200 text-gray-700';
 
   return (
@@ -36,7 +38,7 @@ export default function TaskCard({
       )}
       <div className="flex flex-wrap gap-2 mb-3">
         <span className={['text-xs px-2 py-1 rounded border', tagClass].join(' ')}>
-          {tagType === 'weak' ? '薄弱点' : tagType === 'review' ? '巩固' : '常规'}
+          {tagType === 'weak' ? '薄弱点' : tagType === 'review' ? '巩固' : tagType === 'error' ? '错题' : '常规'}
         </span>
         {sourceLabel && (
           <span className="text-xs px-2 py-1 rounded border bg-gray-100 border-gray-200 text-gray-600">

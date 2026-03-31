@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useState, useMemo } from 'react';
 import { useMastery } from '../hooks/useMastery';
 import { generateDailyTasks } from '../lib/engine';
 import { QUESTIONS } from '../data/questions';
@@ -15,9 +16,118 @@ function getEncourageText(todayCount: number, dailyGoal: number) {
   return '今日目标已达成！去分析页看看进步吧';
 }
 
+// 每日目标设置弹窗
+function DailyGoalModal({
+  isOpen,
+  onClose,
+  currentGoal,
+  onSave,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  currentGoal: number;
+  onSave: (goal: number) => void;
+}) {
+  const [goal, setGoal] = useState(currentGoal);
+
+  if (!isOpen) return null;
+
+  const presetGoals = [10, 15, 20, 30, 50];
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl p-6 w-full max-w-sm">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-semibold text-gray-900">设置每日目标</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+            aria-label="关闭"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="mb-6">
+          <label className="block text-sm text-gray-600 mb-3">
+            每天想完成多少题？
+          </label>
+
+          {/* 快捷选项 */}
+          <div className="grid grid-cols-5 gap-2 mb-4">
+            {presetGoals.map((g) => (
+              <button
+                key={g}
+                onClick={() => setGoal(g)}
+                className={[
+                  'py-2 rounded-lg text-sm font-medium transition-colors',
+                  goal === g
+                    ? 'bg-indigo-800 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
+                ].join(' ')}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
+
+          {/* 自定义滑块 */}
+          <div className="flex items-center gap-4">
+            <input
+              type="range"
+              min={5}
+              max={100}
+              step={5}
+              value={goal}
+              onChange={(e) => setGoal(Number(e.target.value))}
+              className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-800"
+            />
+            <span className="text-lg font-semibold text-indigo-800 w-12 text-right">
+              {goal}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+          >
+            取消
+          </button>
+          <button
+            onClick={() => {
+              onSave(goal);
+              onClose();
+            }}
+            className="flex-1 px-4 py-2 rounded-lg bg-indigo-800 text-white hover:opacity-90"
+          >
+            保存
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage() {
   const router = useRouter();
-  const { mastery, answers, ready, getTodayCount } = useMastery();
+  const { mastery, answers, ready, getTodayCount, profile, updateDailyGoal, streak, maxStreak, getBookmarkedQuestions, getWrongAnswerQuestions } = useMastery();
+  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+
+  // 获取收藏的题目
+  const bookmarkedQuestions = useMemo(() => {
+    const ids = getBookmarkedQuestions();
+    return QUESTIONS.filter((q) => ids.includes(q.id));
+  }, [getBookmarkedQuestions]);
+
+  // 获取错题本的题目
+  const wrongAnswerQuestions = useMemo(() => {
+    const wrongEntries = getWrongAnswerQuestions();
+    return wrongEntries
+      .map((entry) => QUESTIONS.find((q) => q.id === entry.question_id))
+      .filter((q): q is NonNullable<typeof q> => q !== undefined);
+  }, [getWrongAnswerQuestions]);
 
   if (!ready) {
     return (
@@ -38,7 +148,7 @@ export default function HomePage() {
   }
 
   const todayCount = getTodayCount();
-  const dailyGoal = 20;
+  const dailyGoal = profile?.daily_goal ?? 20;
   const { weakTask, reviewTask } = generateDailyTasks(answers, QUESTIONS, mastery);
 
   const weakTopic = weakTask[0]?.tags.grammar_topic ?? '形容词变格';
@@ -106,11 +216,60 @@ export default function HomePage() {
               compact
             />
           )}
+
+          {/* 错题练习任务 */}
+          {wrongAnswerQuestions.length > 0 && (
+            <TaskCard
+              title="错题练习"
+              topic="针对性巩固"
+              count={wrongAnswerQuestions.length}
+              tagType="error"
+              sourceLabel={`${wrongAnswerQuestions.length}道错题待复习`}
+              recommendation="错题连续答对3次会自动移出，坚持练习消灭知识盲区"
+              onStart={() => {
+                localStorage.setItem(
+                  'pgg_current_task',
+                  JSON.stringify({ type: 'wrong', questions: wrongAnswerQuestions.map((q) => q.id) })
+                );
+                router.push('/practice');
+              }}
+            />
+          )}
+
+          {/* 收藏复习任务 */}
+          {bookmarkedQuestions.length > 0 && (
+            <TaskCard
+              title="收藏复习"
+              topic="重点回顾"
+              count={bookmarkedQuestions.length}
+              tagType="review"
+              sourceLabel={`${bookmarkedQuestions.length}道收藏题目`}
+              recommendation="复习收藏的题目，巩固重点知识"
+              onStart={() => {
+                localStorage.setItem(
+                  'pgg_current_task',
+                  JSON.stringify({ type: 'bookmark', questions: bookmarkedQuestions.map((q) => q.id) })
+                );
+                router.push('/practice');
+              }}
+            />
+          )}
         </div>
 
         {/* 右侧统一学习状态面板 */}
         <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-6">
-          <ProgressWidget title="今日进度" current={todayCount} total={dailyGoal} />
+          <div>
+            <div className="flex justify-between items-center mb-3">
+              <div className="font-semibold text-gray-900">今日进度</div>
+              <button
+                onClick={() => setIsGoalModalOpen(true)}
+                className="text-xs text-indigo-700 hover:text-indigo-900 hover:underline"
+              >
+                设置目标
+              </button>
+            </div>
+            <ProgressWidget title="" current={todayCount} total={dailyGoal} />
+          </div>
 
           <div>
             <div className="font-semibold text-gray-900 mb-3">TOP 3 薄弱点</div>
@@ -148,13 +307,36 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* 连续学习天数徽章 */}
           <div className="pt-4 border-t border-gray-200">
-            <div className="text-xs text-gray-500">
-              连续学习天数 · <span className="text-gray-800 font-medium">1 天</span>
+            <div className="flex items-center justify-between">
+              <div className="text-xs text-gray-500">连续学习天数</div>
+              {streak > 0 && (
+                <div className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-full">
+                  最高 {maxStreak} 天
+                </div>
+              )}
             </div>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-2xl">{streak >= 7 ? '🔥' : streak >= 3 ? '✨' : '🌱'}</span>
+              <span className="text-lg font-bold text-gray-900">{streak} 天</span>
+              {streak >= 7 && (
+                <span className="text-xs text-orange-600 font-medium">太棒了！</span>
+              )}
+            </div>
+            {streak === 0 && (
+              <div className="text-xs text-gray-500 mt-1">今天开始你的学习之旅吧</div>
+            )}
           </div>
         </div>
       </div>
+
+      <DailyGoalModal
+        isOpen={isGoalModalOpen}
+        onClose={() => setIsGoalModalOpen(false)}
+        currentGoal={dailyGoal}
+        onSave={updateDailyGoal}
+      />
     </div>
   );
 }

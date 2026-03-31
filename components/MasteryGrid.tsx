@@ -1,3 +1,6 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
 import { MasterySnapshot } from '../types';
 
 interface MasteryGridProps {
@@ -5,6 +8,8 @@ interface MasteryGridProps {
 }
 
 export default function MasteryGrid({ mastery }: MasteryGridProps) {
+  const router = useRouter();
+
   return (
     <div
       className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"
@@ -21,9 +26,11 @@ export default function MasteryGrid({ mastery }: MasteryGridProps) {
           colorClass = 'bg-green-50 border-green-200 text-green-800';
         }
         return (
-          <div
+          <button
             key={m.grammar_topic}
-            className={['border rounded-xl p-4', colorClass].join(' ')}
+            onClick={() => router.push(`/topic?name=${encodeURIComponent(m.grammar_topic)}`)}
+            className={['border rounded-xl p-4 text-left hover:shadow-md transition-shadow cursor-pointer', colorClass].join(' ')}
+            aria-label={`${m.grammar_topic}，掌握度 ${Math.round(m.mastery_rate * 100)}%，点击查看详情`}
           >
             <div className="text-sm font-medium text-gray-800">{m.grammar_topic}</div>
             <div className="text-2xl font-bold mt-1">
@@ -32,7 +39,7 @@ export default function MasteryGrid({ mastery }: MasteryGridProps) {
             <div className="text-xs opacity-80 mt-1">
               最近 {m.total_count} 题对 {m.correct_count} 题
             </div>
-          </div>
+          </button>
         );
       })}
     </div>
