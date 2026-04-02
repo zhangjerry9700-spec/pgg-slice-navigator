@@ -157,7 +157,7 @@ export default function HistoryPage() {
 
   if (!ready) {
     return (
-      <div className="max-w-5xl mx-auto p-6">
+      <div className="max-w-5xl mx-auto p-4 lg:p-6">
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-gray-200 rounded w-32" />
           <div className="h-48 bg-gray-200 rounded-xl" />
@@ -168,7 +168,7 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
+    <div className="max-w-5xl mx-auto p-4 lg:p-6">
       <NavBar />
 
       {/* 头部统计 */}

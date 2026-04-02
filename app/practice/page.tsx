@@ -32,6 +32,10 @@ export default function PracticePage() {
   const [masteryBefore, setMasteryBefore] = useState<MasterySnapshot[]>([]);
   const [sessionAnswers, setSessionAnswers] = useState<UserAnswer[]>([]);
 
+  // 任务信息
+  const [taskTitle, setTaskTitle] = useState<string>('');
+  const [taskType, setTaskType] = useState<string>('');
+
   // 计时功能
   const [startTime, setStartTime] = useState<number>(0);
   const [questionStartTime, setQuestionStartTime] = useState<number>(0);
@@ -49,6 +53,13 @@ export default function PracticePage() {
         const task = JSON.parse(stored);
         if (task.questions && task.questions.length > 0) {
           setQueue(task.questions);
+          // 读取任务标题和类型
+          if (task.title) {
+            setTaskTitle(task.title);
+          }
+          if (task.type) {
+            setTaskType(task.type);
+          }
           // 保存练习开始前的掌握度快照
           setMasteryBefore([...mastery]);
           // 初始化计时器
@@ -243,11 +254,35 @@ export default function PracticePage() {
     );
   }
 
+  // 获取任务标题的显示文本
+  const getTaskTitleDisplay = () => {
+    if (taskTitle) return taskTitle;
+    const typeMap: Record<string, string> = {
+      weak: '薄弱点练习',
+      review: '智能推送',
+      wrong: '错题练习',
+      bookmark: '收藏复习',
+      recommendation: '智能每日推荐',
+      weak_topic: '弱项专项练习',
+    };
+    return typeMap[taskType] || '练习';
+  };
+
   return (
-    <div className="max-w-5xl mx-auto p-6">
+    <div className="max-w-5xl mx-auto p-4 lg:p-6">
       <NavBar />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* 任务标题 */}
+      {taskTitle && (
+        <div className="mb-4 flex items-center gap-2">
+          <span className="text-sm text-gray-500">当前任务:</span>
+          <span className="text-sm font-medium text-indigo-800 bg-indigo-50 px-3 py-1 rounded-full">
+            {getTaskTitleDisplay()}
+          </span>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
         <main className="lg:col-span-2">
           <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-6">
             <div className="flex justify-between items-center mb-4">

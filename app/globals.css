@@ -51,4 +51,47 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+
+  /* 安全区域支持 */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* 触摸优化 */
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+
+  /* 防止文本选择 */
+  .select-none {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+}
+
+/* 移动端触摸优化 */
+@media (hover: none) and (pointer: coarse) {
+  /* 增大触摸目标 */
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* 禁用悬停效果 */
+  .hover\:opacity-90:hover {
+    opacity: 1;
+  }
+}
+
+/* 响应式字体 */
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+/* 滑动优化 */
+.scroll-smooth {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }

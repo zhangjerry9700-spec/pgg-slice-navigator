@@ -7,8 +7,10 @@ import { useTheme } from '../hooks/useTheme';
 const navItems = [
   { href: '/', label: '今日任务' },
   { href: '/practice', label: '真题练习' },
+  { href: '/search', label: '题目搜索' },
   { href: '/bookmarks', label: '我的收藏' },
   { href: '/analysis', label: '薄弱点分析' },
+  { href: '/achievements', label: '成就' },
   { href: '/history', label: '学习历史' },
 ];
 
@@ -17,9 +19,9 @@ export default function NavBar() {
   const { isDark, toggleTheme } = useTheme();
 
   return (
-    <nav className="flex items-center gap-6 border-b border-[var(--card-border)] pb-3 mb-5" aria-label="主导航">
+    <nav className="hidden lg:flex items-center gap-6 border-b border-[var(--card-border)] pb-3 mb-5" aria-label="主导航">
       <div className="text-sm font-semibold text-[var(--accent-color)] mr-2">PGG</div>
-      <div className="flex-1 flex items-center gap-6">
+      <div className="flex-1 flex items-center gap-4 xl:gap-6 overflow-x-auto">
         {navItems.map((item) => {
           const active = pathname === item.href;
           return (

@@ -14,7 +14,7 @@ export default function AnswerOption({
   onClick,
 }: AnswerOptionProps) {
   let className =
-    'w-full text-left px-4 py-3 rounded-md border transition-colors cursor-pointer ';
+    'w-full text-left px-4 py-3 sm:py-4 rounded-md border transition-colors cursor-pointer touch-manipulation min-h-[48px] flex items-center ';
 
   if (showResult) {
     if (correct) {

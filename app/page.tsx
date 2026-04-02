@@ -1,10 +1,15 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { Sparkles, Target } from 'lucide-react';
 import { useMastery } from '../hooks/useMastery';
+import { useAuth } from '../hooks/useAuth';
 import { generateDailyTasks } from '../lib/engine';
 import { QUESTIONS } from '../data/questions';
+import { getAchievementById } from '../types/achievements';
+import { getDailyRecommendations, getWeakTopicRecommendations } from '../lib/recommendation/engine';
+import type { RecommendationResult } from '../lib/recommendation/types';
 import NavBar from '../components/NavBar';
 import TaskCard from '../components/TaskCard';
 import ProgressWidget from '../components/ProgressWidget';
@@ -112,8 +117,53 @@ function DailyGoalModal({
 
 export default function HomePage() {
   const router = useRouter();
-  const { mastery, answers, ready, getTodayCount, profile, updateDailyGoal, streak, maxStreak, getBookmarkedQuestions, getWrongAnswerQuestions } = useMastery();
+  const { mastery, answers, ready, getTodayCount, profile, updateDailyGoal, streak, maxStreak, getBookmarkedQuestions, getWrongAnswerQuestions, achievements } = useMastery();
+  const { user } = useAuth();
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+
+  // 推荐引擎相关状态
+  const [dailyRecommendations, setDailyRecommendations] = useState<RecommendationResult[]>([]);
+  const [weakTopicRecommendations, setWeakTopicRecommendations] = useState<RecommendationResult[]>([]);
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
+
+  // 加载推荐任务
+  const loadRecommendations = useCallback(async () => {
+    // 获取用户 ID（登录用户或匿名用户）
+    let userId = user?.id;
+    if (!userId) {
+      // 匿名用户使用 localStorage 中的 anonymous_id
+      userId = localStorage.getItem('pgg_anonymous_id') || '';
+      if (!userId) {
+        // 如果没有匿名 ID，生成一个
+        userId = 'anon_' + Math.random().toString(36).substring(2, 15);
+        localStorage.setItem('pgg_anonymous_id', userId);
+      }
+    }
+
+    if (!userId) return;
+
+    setIsLoadingRecommendations(true);
+    try {
+      const dailyGoal = profile?.daily_goal ?? 20;
+      const [daily, weak] = await Promise.all([
+        getDailyRecommendations(userId, dailyGoal),
+        getWeakTopicRecommendations(userId, 10),
+      ]);
+      setDailyRecommendations(daily);
+      setWeakTopicRecommendations(weak);
+    } catch (error) {
+      console.error('加载推荐任务失败:', error);
+    } finally {
+      setIsLoadingRecommendations(false);
+    }
+  }, [user?.id, profile?.daily_goal]);
+
+  // 页面加载后获取推荐
+  useEffect(() => {
+    if (ready) {
+      loadRecommendations();
+    }
+  }, [ready, loadRecommendations]);
 
   // 获取收藏的题目
   const bookmarkedQuestions = useMemo(() => {
@@ -163,7 +213,7 @@ export default function HomePage() {
   const encourage = getEncourageText(todayCount, dailyGoal);
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
+    <div className="max-w-5xl mx-auto p-4 lg:p-6">
       <NavBar />
 
       {/* 状态摘要区 */}
@@ -181,89 +231,168 @@ export default function HomePage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-5">
-          {weakTask.length > 0 && (
-            <TaskCard
-              title="今日推荐任务"
-              topic={weakTopic}
-              count={weakTask.length}
-              tagType="weak"
-              sourceLabel={weakTask[0]?.source_year + '年真题'}
-              recommendation={`基于你最近答题记录，${weakTopic}是当前最大薄弱点，已优先推荐`}
-              onStart={() => {
-                localStorage.setItem(
-                  'pgg_current_task',
-                  JSON.stringify({ type: 'weak', questions: weakTask.map((q) => q.id) })
-                );
-                router.push('/practice');
-              }}
-            />
+        {/* 主内容区 */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* 加载中状态 */}
+          {isLoadingRecommendations && (
+            <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-6 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[var(--accent-color)] mr-3" />
+              <span className="text-[var(--text-secondary)]">正在生成个性化推荐...</span>
+            </div>
           )}
 
-          {reviewTask.length > 0 && (
-            <TaskCard
-              title="智能推送"
-              topic="多知识点巩固"
-              count={reviewTask.length}
-              tagType="review"
-              onStart={() => {
-                localStorage.setItem(
-                  'pgg_current_task',
-                  JSON.stringify({ type: 'review', questions: reviewTask.map((q) => q.id) })
-                );
-                router.push('/practice');
-              }}
-              compact
-            />
+          {/* 推荐任务区域 */}
+          {(dailyRecommendations.length > 0 || weakTopicRecommendations.length > 0) && (
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="w-5 h-5 text-yellow-500" />
+                <h2 className="text-lg font-semibold text-[var(--text-primary)]">智能推荐</h2>
+              </div>
+              <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl px-5">
+                {dailyRecommendations.length > 0 && (
+                  <TaskCard
+                    title="每日智能推荐"
+                    topic="个性化练习"
+                    count={dailyRecommendations.length}
+                    tagType="primary"
+                    sourceLabel={`精选${dailyRecommendations.length}题`}
+                    recommendation={
+                      dailyRecommendations[0]?.reason?.description
+                        ? `基于你的学习数据：${dailyRecommendations[0].reason.description}`
+                        : '根据你的学习数据，智能推荐最适合你的题目'
+                    }
+                    onStart={() => {
+                      localStorage.setItem(
+                        'pgg_current_task',
+                        JSON.stringify({
+                          type: 'recommendation',
+                          questions: dailyRecommendations.map((r) => r.question.id),
+                          title: '智能每日推荐',
+                        })
+                      );
+                      router.push('/practice');
+                    }}
+                  />
+                )}
+                {weakTopicRecommendations.length > 0 && (
+                  <TaskCard
+                    title="弱项专项突破"
+                    topic="针对性提升"
+                    count={weakTopicRecommendations.length}
+                    tagType="weak"
+                    sourceLabel={`${new Set(weakTopicRecommendations.map(r => r.question.tags.grammar_topic)).size}个薄弱知识点`}
+                    recommendation={
+                      weakTopicRecommendations[0]?.reason?.description
+                        ? `专项突破：${weakTopicRecommendations[0].reason.description}`
+                        : '专门针对你的薄弱环节进行强化训练'
+                    }
+                    onStart={() => {
+                      localStorage.setItem(
+                        'pgg_current_task',
+                        JSON.stringify({
+                          type: 'weak_topic',
+                          questions: weakTopicRecommendations.map((r) => r.question.id),
+                          title: '弱项专项练习',
+                        })
+                      );
+                      router.push('/practice');
+                    }}
+                  />
+                )}
+              </div>
+            </section>
           )}
 
-          {/* 错题练习任务 */}
-          {wrongAnswerQuestions.length > 0 && (
-            <TaskCard
-              title="错题练习"
-              topic="针对性巩固"
-              count={wrongAnswerQuestions.length}
-              tagType="error"
-              sourceLabel={`${wrongAnswerQuestions.length}道错题待复习`}
-              recommendation="错题连续答对3次会自动移出，坚持练习消灭知识盲区"
-              onStart={() => {
-                localStorage.setItem(
-                  'pgg_current_task',
-                  JSON.stringify({ type: 'wrong', questions: wrongAnswerQuestions.map((q) => q.id) })
-                );
-                router.push('/practice');
-              }}
-            />
-          )}
-
-          {/* 收藏复习任务 */}
-          {bookmarkedQuestions.length > 0 && (
-            <TaskCard
-              title="收藏复习"
-              topic="重点回顾"
-              count={bookmarkedQuestions.length}
-              tagType="review"
-              sourceLabel={`${bookmarkedQuestions.length}道收藏题目`}
-              recommendation="复习收藏的题目，巩固重点知识"
-              onStart={() => {
-                localStorage.setItem(
-                  'pgg_current_task',
-                  JSON.stringify({ type: 'bookmark', questions: bookmarkedQuestions.map((q) => q.id) })
-                );
-                router.push('/practice');
-              }}
-            />
+          {/* 常规任务区域 */}
+          {(weakTask.length > 0 || reviewTask.length > 0 || wrongAnswerQuestions.length > 0 || bookmarkedQuestions.length > 0) && (
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <Target className="w-5 h-5 text-[var(--accent-color)]" />
+                <h2 className="text-lg font-semibold text-[var(--text-primary)]">练习任务</h2>
+              </div>
+              <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl px-5">
+                {weakTask.length > 0 && (
+                  <TaskCard
+                    title={`${weakTopic}专项练习`}
+                    topic="薄弱点强化"
+                    count={weakTask.length}
+                    tagType="weak"
+                    sourceLabel={`${weakTask[0]?.source_year}年真题`}
+                    recommendation={`${weakTopic}是当前最大薄弱点`}
+                    onStart={() => {
+                      localStorage.setItem(
+                        'pgg_current_task',
+                        JSON.stringify({ type: 'weak', questions: weakTask.map((q) => q.id) })
+                      );
+                      router.push('/practice');
+                    }}
+                  />
+                )}
+                {reviewTask.length > 0 && (
+                  <TaskCard
+                    title="综合巩固练习"
+                    topic="多知识点"
+                    count={reviewTask.length}
+                    tagType="review"
+                    sourceLabel="智能组卷"
+                    onStart={() => {
+                      localStorage.setItem(
+                        'pgg_current_task',
+                        JSON.stringify({ type: 'review', questions: reviewTask.map((q) => q.id) })
+                      );
+                      router.push('/practice');
+                    }}
+                    compact
+                  />
+                )}
+                {wrongAnswerQuestions.length > 0 && (
+                  <TaskCard
+                    title="错题复习"
+                    topic="针对性巩固"
+                    count={wrongAnswerQuestions.length}
+                    tagType="error"
+                    sourceLabel={`${wrongAnswerQuestions.length}道待复习`}
+                    recommendation="连续答对3次自动移出错题本"
+                    onStart={() => {
+                      localStorage.setItem(
+                        'pgg_current_task',
+                        JSON.stringify({ type: 'wrong', questions: wrongAnswerQuestions.map((q) => q.id) })
+                      );
+                      router.push('/practice');
+                    }}
+                  />
+                )}
+                {bookmarkedQuestions.length > 0 && (
+                  <TaskCard
+                    title="收藏题目复习"
+                    topic="重点回顾"
+                    count={bookmarkedQuestions.length}
+                    tagType="review"
+                    sourceLabel={`${bookmarkedQuestions.length}道收藏`}
+                    recommendation="复习你标记的重点题目"
+                    onStart={() => {
+                      localStorage.setItem(
+                        'pgg_current_task',
+                        JSON.stringify({ type: 'bookmark', questions: bookmarkedQuestions.map((q) => q.id) })
+                      );
+                      router.push('/practice');
+                    }}
+                  />
+                )}
+              </div>
+            </section>
           )}
         </div>
 
-        {/* 右侧统一学习状态面板 */}
-        <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-6">
+        {/* 右侧状态面板 */}
+        <aside className="space-y-6">
+          <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-5 space-y-6">
           <div>
             <div className="flex justify-between items-center mb-3">
-              <div className="font-semibold text-gray-900">今日进度</div>
+              <div className="font-semibold text-[var(--text-primary)]">今日进度</div>
               <button
                 onClick={() => setIsGoalModalOpen(true)}
-                className="text-xs text-indigo-700 hover:text-indigo-900 hover:underline"
+                className="text-xs text-[var(--accent-color)] hover:opacity-70"
               >
                 设置目标
               </button>
@@ -272,22 +401,22 @@ export default function HomePage() {
           </div>
 
           <div>
-            <div className="font-semibold text-gray-900 mb-3">TOP 3 薄弱点</div>
+            <div className="font-semibold text-[var(--text-primary)] mb-3">TOP 3 薄弱点</div>
             <div className="space-y-2">
               {topWeak.length > 0 ? (
                 topWeak.map((m, idx) => (
                   <div key={m.grammar_topic} className="text-sm">
-                    <span className="text-gray-500 mr-2">{idx + 1}.</span>
-                    <span className="text-gray-800">{m.grammar_topic}</span>
-                    <span className="text-gray-500 ml-2">
+                    <span className="text-[var(--text-secondary)] mr-2">{idx + 1}.</span>
+                    <span className="text-[var(--text-primary)]">{m.grammar_topic}</span>
+                    <span className="text-[var(--text-secondary)] ml-2">
                       掌握度 {Math.round(m.mastery_rate * 100)}%
                     </span>
                   </div>
                 ))
               ) : (
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-[var(--text-secondary)]">
                   <div className="mb-2">刚开始？先做个测评</div>
-                  <div className="text-xs text-gray-500 mb-3">
+                  <div className="text-xs mb-3">
                     答 5-10 题后，我们会为你定位最该补的语法点。
                   </div>
                   <button
@@ -298,7 +427,7 @@ export default function HomePage() {
                       );
                       router.push('/practice');
                     }}
-                    className="text-sm px-4 py-2 rounded-md bg-indigo-800 text-white hover:opacity-90"
+                    className="text-sm px-4 py-2 rounded-md bg-[var(--accent-color)] text-[var(--accent-text)] hover:opacity-90"
                   >
                     开始薄弱点测评
                   </button>
@@ -308,9 +437,9 @@ export default function HomePage() {
           </div>
 
           {/* 连续学习天数徽章 */}
-          <div className="pt-4 border-t border-gray-200">
+          <div className="pt-4 border-t border-[var(--card-border)]">
             <div className="flex items-center justify-between">
-              <div className="text-xs text-gray-500">连续学习天数</div>
+              <div className="text-xs text-[var(--text-secondary)]">连续学习天数</div>
               {streak > 0 && (
                 <div className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-full">
                   最高 {maxStreak} 天
@@ -319,16 +448,64 @@ export default function HomePage() {
             </div>
             <div className="flex items-center gap-2 mt-2">
               <span className="text-2xl">{streak >= 7 ? '🔥' : streak >= 3 ? '✨' : '🌱'}</span>
-              <span className="text-lg font-bold text-gray-900">{streak} 天</span>
+              <span className="text-lg font-bold text-[var(--text-primary)]">{streak} 天</span>
               {streak >= 7 && (
                 <span className="text-xs text-orange-600 font-medium">太棒了！</span>
               )}
             </div>
             {streak === 0 && (
-              <div className="text-xs text-gray-500 mt-1">今天开始你的学习之旅吧</div>
+              <div className="text-xs text-[var(--text-secondary)] mt-1">今天开始你的学习之旅吧</div>
+            )}
+          </div>
+
+          {/* 最近解锁的成就 */}
+          <div className="pt-4 border-t border-[var(--card-border)]">
+            <div className="flex items-center justify-between mb-3">
+              <div className="font-semibold text-[var(--text-primary)]">最近成就</div>
+              <button
+                onClick={() => router.push('/achievements')}
+                className="text-xs text-[var(--accent-color)] hover:opacity-70"
+              >
+                查看全部
+              </button>
+            </div>
+            {achievements.length > 0 ? (
+              <div className="space-y-2">
+                {achievements
+                  .slice(-3)
+                  .reverse()
+                  .map((userAchievement) => {
+                    const achievement = getAchievementById(userAchievement.achievement_id);
+                    if (!achievement) return null;
+                    return (
+                      <div
+                        key={achievement.id}
+                        className="flex items-center gap-2 p-2 bg-[var(--warning-bg)] rounded-lg border border-[var(--warning-text)]/20"
+                      >
+                        <span className="text-xl">{achievement.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-[var(--text-primary)] truncate">
+                            {achievement.title}
+                          </div>
+                          <div className="text-xs text-[var(--text-secondary)] truncate">
+                            {achievement.description}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            ) : (
+              <div className="text-sm text-[var(--text-secondary)]">
+                还没有解锁任何成就
+                <div className="text-xs mt-1">
+                  开始答题，解锁你的第一个成就！
+                </div>
+              </div>
             )}
           </div>
         </div>
+        </aside>
       </div>
 
       <DailyGoalModal

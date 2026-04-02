@@ -20,3 +20,40 @@
   1. `NavBar.tsx`：导航项从带边框按钮改为简洁 link/tab。
   2. `AnalysisPage` 错题本列表：用底部分隔线 `border-b` 替代每个条目的 rounded-lg 卡片。
   3. `HomePage` 右侧学习状态面板：内部子项去除二次套卡片，直接平铺。
+
+## Week 2 任务清单
+
+### ✅ TODO-003: 配置 Vercel 部署
+- **状态:** 已完成
+- **文件:** `vercel.json`, `.github/workflows/deploy.yml`, `DEPLOY.md`
+- **What:** 配置 Vercel 项目，设置环境变量，部署生产版本
+- **Why:** 将本地开发版本部署到线上，供用户访问
+
+### ✅ TODO-004: 配置 Supabase Production 环境
+- **状态:** 已完成
+- **文件:** `scripts/setup-production.js`, `sql/seed-admin.sql`
+- **What:** 创建 Supabase 生产项目，配置数据库迁移，设置 RLS 策略
+- **Why:** 区分开发和生产环境，确保数据安全
+
+### ✅ TODO-005: 实现自适应推荐引擎 V1
+- **状态:** 已完成
+- **文件:** `lib/recommendation/types.ts`, `lib/recommendation/engine.ts`
+- **What:** 基于规则引擎实现题目推荐（弱项加权 + 难度递进 + 遗忘曲线）
+- **Why:** 为用户提供个性化学习体验
+- **算法策略:**
+  - 弱项加权（掌握度 < 60% 优先）
+  - 遗忘曲线（3天未练习增加权重）
+  - 难度递进（根据掌握度推荐合适难度）
+  - 错题优先（曾答错题目加权）
+  - 多样性保证（避免连续相同主题）
+
+### ✅ TODO-006: 内容管理后台 (CMS)
+- **状态:** 已完成
+- **文件:** `app/admin/`, `lib/repositories/ContentRepository.ts`, `components/QuestionReviewCard.tsx`, `components/AdminGuard.tsx`
+- **What:** 创建题目上传、审核、修正的后台管理界面
+- **Why:** 2-5 人内容团队需要管理真题和知识点
+- **功能:**
+  - 题目审核（通过/拒绝）
+  - 审核意见填写
+  - 审计日志查看
+  - 权限管理（content_admin 角色）
