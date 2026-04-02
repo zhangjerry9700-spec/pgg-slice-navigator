@@ -1,8 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { useTheme } from '../hooks/useTheme';
+import { useAuth } from '../hooks/useAuth';
+import { getContentRepository } from '../lib/repositories/ContentRepository';
 
 const navItems = [
   { href: '/', label: '今日任务' },
@@ -16,7 +19,29 @@ const navItems = [
 
 export default function NavBar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { isDark, toggleTheme } = useTheme();
+  const { user, signOut, isLoading: authLoading } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // 检查用户是否为管理员
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (user) {
+        try {
+          const repo = getContentRepository();
+          const hasAccess = await repo.isContentAdmin();
+          setIsAdmin(hasAccess);
+        } catch {
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+    };
+
+    checkAdmin();
+  }, [user]);
 
   return (
     <nav className="hidden lg:flex items-center gap-6 border-b border-[var(--card-border)] pb-3 mb-5" aria-label="主导航">
@@ -39,6 +64,17 @@ export default function NavBar() {
             </Link>
           );
         })}
+        {isAdmin && (
+          <Link
+            href="/admin"
+            className={[
+              'text-sm font-medium transition-colors py-1 px-2 rounded bg-amber-100 text-amber-800 hover:bg-amber-200',
+              pathname.startsWith('/admin') ? 'ring-2 ring-amber-400' : '',
+            ].join(' ')}
+          >
+            管理后台
+          </Link>
+        )}
       </div>
       {/* 主题切换按钮 */}
       <button
@@ -69,6 +105,32 @@ export default function NavBar() {
           </svg>
         )}
       </button>
+
+      {/* 用户状态 */}
+      {!authLoading && (
+        <div className="flex items-center gap-3">
+          {user ? (
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-[var(--text-secondary)] truncate max-w-[150px]">
+                {user.email}
+              </span>
+              <button
+                onClick={() => signOut()}
+                className="text-sm px-3 py-1.5 rounded-lg bg-[var(--accent-color)] text-[var(--accent-text)] hover:opacity-90 transition-opacity"
+              >
+                退出
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => router.push('/auth')}
+              className="text-sm px-3 py-1.5 rounded-lg bg-[var(--accent-color)] text-[var(--accent-text)] hover:opacity-90 transition-opacity"
+            >
+              登录
+            </button>
+          )}
+        </div>
+      )}
     </nav>
   );
 }

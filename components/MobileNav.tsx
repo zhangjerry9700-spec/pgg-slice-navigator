@@ -8,7 +8,7 @@ const mobileNavItems = [
   { href: '/practice', label: '练习', icon: '✏️' },
   { href: '/search', label: '搜索', icon: '🔍' },
   { href: '/analysis', label: '分析', icon: '📊' },
-  { href: '/achievements', label: '成就', icon: '🏆' },
+  { href: '/profile', label: '我的', icon: '👤' },
 ];
 
 export default function MobileNav() {

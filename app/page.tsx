@@ -14,6 +14,20 @@ import NavBar from '../components/NavBar';
 import TaskCard from '../components/TaskCard';
 import ProgressWidget from '../components/ProgressWidget';
 
+// 检查是否已登录或已有游客数据
+function shouldShowLogin(): boolean {
+  if (typeof window === 'undefined') return false;
+
+  // 检查本地存储是否有用户数据
+  const hasLocalData = !!(
+    localStorage.getItem('pgg_anonymous_id') ||
+    localStorage.getItem('pgg_mastery') ||
+    localStorage.getItem('pgg_learningHistory')
+  );
+
+  return !hasLocalData;
+}
+
 function getEncourageText(todayCount: number, dailyGoal: number) {
   if (todayCount === 0) return '开始今天的练习，精准打击薄弱点';
   if (todayCount < dailyGoal * 0.5) return '继续加油，薄弱点正在减少';
@@ -118,8 +132,15 @@ function DailyGoalModal({
 export default function HomePage() {
   const router = useRouter();
   const { mastery, answers, ready, getTodayCount, profile, updateDailyGoal, streak, maxStreak, getBookmarkedQuestions, getWrongAnswerQuestions, achievements } = useMastery();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+
+  // 未登录用户重定向到登录页
+  useEffect(() => {
+    if (!authLoading && !user && ready && shouldShowLogin()) {
+      router.push('/auth');
+    }
+  }, [authLoading, user, ready, router]);
 
   // 推荐引擎相关状态
   const [dailyRecommendations, setDailyRecommendations] = useState<RecommendationResult[]>([]);
