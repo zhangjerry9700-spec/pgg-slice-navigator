@@ -332,24 +332,28 @@ export default function HomePage() {
                 <h2 className="text-lg font-semibold text-[var(--text-primary)]">练习任务</h2>
               </div>
               <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl px-5">
-                {weakTask.length > 0 && (
+                {weakTask && weakTask.length > 0 && (
                   <TaskCard
                     title={`${weakTopic}专项练习`}
                     topic="薄弱点强化"
                     count={weakTask.length}
                     tagType="weak"
-                    sourceLabel={`${weakTask[0]?.source_year}年真题`}
+                    sourceLabel={`${weakTask[0]?.source_year || '历年'}年真题`}
                     recommendation={`${weakTopic}是当前最大薄弱点`}
                     onStart={() => {
+                      const validIds = weakTask
+                        .filter(q => q && q.id)
+                        .map((q) => q.id);
+                      if (validIds.length === 0) return;
                       localStorage.setItem(
                         'pgg_current_task',
-                        JSON.stringify({ type: 'weak', questions: weakTask.map((q) => q.id) })
+                        JSON.stringify({ type: 'weak', questions: validIds })
                       );
                       router.push('/practice');
                     }}
                   />
                 )}
-                {reviewTask.length > 0 && (
+                {reviewTask && reviewTask.length > 0 && (
                   <TaskCard
                     title="综合巩固练习"
                     topic="多知识点"
@@ -357,16 +361,20 @@ export default function HomePage() {
                     tagType="review"
                     sourceLabel="智能组卷"
                     onStart={() => {
+                      const validIds = reviewTask
+                        .filter(q => q && q.id)
+                        .map((q) => q.id);
+                      if (validIds.length === 0) return;
                       localStorage.setItem(
                         'pgg_current_task',
-                        JSON.stringify({ type: 'review', questions: reviewTask.map((q) => q.id) })
+                        JSON.stringify({ type: 'review', questions: validIds })
                       );
                       router.push('/practice');
                     }}
                     compact
                   />
                 )}
-                {wrongAnswerQuestions.length > 0 && (
+                {wrongAnswerQuestions && wrongAnswerQuestions.length > 0 && (
                   <TaskCard
                     title="错题复习"
                     topic="针对性巩固"
@@ -375,15 +383,19 @@ export default function HomePage() {
                     sourceLabel={`${wrongAnswerQuestions.length}道待复习`}
                     recommendation="连续答对3次自动移出错题本"
                     onStart={() => {
+                      const validIds = wrongAnswerQuestions
+                        .filter(q => q && q.id)
+                        .map((q) => q.id);
+                      if (validIds.length === 0) return;
                       localStorage.setItem(
                         'pgg_current_task',
-                        JSON.stringify({ type: 'wrong', questions: wrongAnswerQuestions.map((q) => q.id) })
+                        JSON.stringify({ type: 'wrong', questions: validIds })
                       );
                       router.push('/practice');
                     }}
                   />
                 )}
-                {bookmarkedQuestions.length > 0 && (
+                {bookmarkedQuestions && bookmarkedQuestions.length > 0 && (
                   <TaskCard
                     title="收藏题目复习"
                     topic="重点回顾"
@@ -392,9 +404,13 @@ export default function HomePage() {
                     sourceLabel={`${bookmarkedQuestions.length}道收藏`}
                     recommendation="复习你标记的重点题目"
                     onStart={() => {
+                      const validIds = bookmarkedQuestions
+                        .filter(q => q && q.id)
+                        .map((q) => q.id);
+                      if (validIds.length === 0) return;
                       localStorage.setItem(
                         'pgg_current_task',
-                        JSON.stringify({ type: 'bookmark', questions: bookmarkedQuestions.map((q) => q.id) })
+                        JSON.stringify({ type: 'bookmark', questions: validIds })
                       );
                       router.push('/practice');
                     }}

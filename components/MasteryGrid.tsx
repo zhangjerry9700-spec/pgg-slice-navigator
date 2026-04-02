@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { MasterySnapshot } from '../types';
+import { QUESTIONS } from '../data/questions';
 
 interface MasteryGridProps {
   mastery: MasterySnapshot[];
@@ -10,13 +11,21 @@ interface MasteryGridProps {
 export default function MasteryGrid({ mastery }: MasteryGridProps) {
   const router = useRouter();
 
+  // 过滤掉无效数据：只在 QUESTIONS 中存在的 grammar_topic 才显示
+  const validMastery = mastery.filter((m) => {
+    const hasQuestions = QUESTIONS.some(
+      (q) => q.tags.grammar_topic === m.grammar_topic
+    );
+    return hasQuestions && m.grammar_topic;
+  });
+
   return (
     <div
       className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"
       role="region"
       aria-label="语法掌握度网格"
     >
-      {mastery.map((m) => {
+      {validMastery.map((m) => {
         // 防止 NaN 显示
         const rate = isNaN(m.mastery_rate) ? 0 : m.mastery_rate;
         const totalCount = isNaN(m.total_count) ? 0 : m.total_count;

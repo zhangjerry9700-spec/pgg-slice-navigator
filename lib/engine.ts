@@ -230,5 +230,10 @@ export function generateDailyTasks(
 } {
   const weakTask = generateTaskQuestions(answers, questions, mastery, 'weak', 15);
   const reviewTask = generateTaskQuestions(answers, questions, mastery, 'review', 10);
-  return { weakTask, reviewTask };
+
+  // 过滤掉无效的题目（确保每个题目都有有效的ID和内容）
+  const validWeakTask = weakTask.filter(q => q && q.id && q.content);
+  const validReviewTask = reviewTask.filter(q => q && q.id && q.content);
+
+  return { weakTask: validWeakTask, reviewTask: validReviewTask };
 }

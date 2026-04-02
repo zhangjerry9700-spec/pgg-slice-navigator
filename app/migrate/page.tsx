@@ -63,6 +63,8 @@ export default function MigratePage() {
 
     if (result.success) {
       setIsComplete(true);
+      // 标记迁移已完成，防止重复跳转
+      sessionStorage.setItem('pgg_data_migrated', 'true');
       // 3秒后自动跳转到首页
       setTimeout(() => {
         router.push('/');

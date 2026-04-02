@@ -80,14 +80,16 @@ export function useAuth(): UseAuthReturn {
 
         // 根据不同事件执行不同操作
         if (event === 'SIGNED_IN') {
-          // 检查是否需要数据迁移
+          // 检查是否需要数据迁移（只在首次登录时跳转，避免页面刷新重复跳转）
           const hasLocalData = checkLocalData();
-          if (hasLocalData) {
+          const hasMigrated = sessionStorage.getItem('pgg_data_migrated');
+          if (hasLocalData && !hasMigrated) {
+            sessionStorage.setItem('pgg_data_migrated', 'true');
             router.push('/migrate');
-          } else {
-            router.push('/');
           }
         } else if (event === 'SIGNED_OUT') {
+          // 清除迁移标记
+          sessionStorage.removeItem('pgg_data_migrated');
           router.push('/auth');
         }
       }
