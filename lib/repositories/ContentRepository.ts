@@ -281,17 +281,48 @@ export class ContentRepository {
    */
   async isContentAdmin(): Promise<boolean> {
     const supabase = getBrowserClient();
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) return false;
 
+    // 获取当前用户，带重试机制
+    let userId: string | null = null;
+    for (let i = 0; i < 3; i++) {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userData.user) {
+        userId = userData.user.id;
+        break;
+      }
+      if (userError) {
+        console.error('获取用户信息失败:', userError);
+      }
+      // 等待一小段时间后重试
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+
+    if (!userId) {
+      console.error('无法获取用户ID');
+      return false;
+    }
+
+    console.log('检查用户权限:', userId);
+
+    // 查询用户角色
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from('user_profiles')
       .select('role')
-      .eq('id', user.user.id)
+      .eq('id', userId)
       .single();
 
-    if (error || !data) return false;
+    if (error) {
+      console.error('查询用户角色失败:', error);
+      return false;
+    }
+
+    if (!data) {
+      console.error('未找到用户资料');
+      return false;
+    }
+
+    console.log('用户角色:', data.role);
 
     return data.role === 'content_admin' || data.role === 'admin';
   }

@@ -184,12 +184,23 @@ function AdminLoginForm({ onLogin }: { onLogin: () => void }) {
         return;
       }
 
+      // 等待 session 同步
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       // 检查是否是管理员
       const repo = getContentRepository();
-      const isAdmin = await repo.isContentAdmin();
+      let isAdmin = false;
+      try {
+        isAdmin = await repo.isContentAdmin();
+      } catch (checkError) {
+        console.error('权限检查失败:', checkError);
+        setError('权限检查失败，请刷新页面重试');
+        setIsLoading(false);
+        return;
+      }
 
       if (!isAdmin) {
-        setError('您没有管理员权限');
+        setError('您没有管理员权限，请联系系统管理员');
         setIsLoading(false);
         return;
       }
@@ -197,6 +208,7 @@ function AdminLoginForm({ onLogin }: { onLogin: () => void }) {
       // 登录成功且是管理员
       onLogin();
     } catch (err) {
+      console.error('登录错误:', err);
       setError(err instanceof Error ? err.message : '登录失败，请重试');
     } finally {
       setIsLoading(false);
