@@ -20,7 +20,7 @@ interface AuthState {
 interface UseAuthReturn extends AuthState {
   // 认证操作
   signUp: (email: string, password: string) => Promise<{ error: string | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: string | null; success?: boolean }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
   updatePassword: (newPassword: string) => Promise<{ error: string | null }>;
@@ -142,7 +142,7 @@ export function useAuth(): UseAuthReturn {
   const signIn = useCallback(async (
     email: string,
     password: string
-  ): Promise<{ error: string | null }> => {
+  ): Promise<{ error: string | null; success?: boolean }> => {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
@@ -152,12 +152,13 @@ export function useAuth(): UseAuthReturn {
       });
 
       if (error) {
+        const translatedError = translateAuthError(error.message);
         setState(prev => ({
           ...prev,
           isLoading: false,
-          error: translateAuthError(error.message),
+          error: translatedError,
         }));
-        return { error: translateAuthError(error.message) };
+        return { error: translatedError };
       }
 
       // 登录成功，更新状态
@@ -172,10 +173,12 @@ export function useAuth(): UseAuthReturn {
       if (typeof window !== 'undefined') {
         const urlParams = new URLSearchParams(window.location.search);
         const redirectTo = urlParams.get('redirect');
-        router.push(redirectTo || '/');
+        if (redirectTo) {
+          router.push(redirectTo);
+        }
       }
 
-      return { error: null };
+      return { error: null, success: true };
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : '登录失败，请重试';
       setState(prev => ({ ...prev, isLoading: false, error: errorMsg }));
