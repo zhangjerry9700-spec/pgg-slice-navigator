@@ -5,13 +5,13 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getContentRepository } from '@/lib/repositories/ContentRepository';
 import type { PendingQuestion } from '@/lib/repositories/types';
 import { QuestionReviewCard } from '@/components/QuestionReviewCard';
 
-export default function QuestionReviewPage() {
+function QuestionReviewContent() {
   const searchParams = useSearchParams();
   const statusParam = searchParams.get('status') as 'pending' | 'approved' | 'rejected' | null;
 
@@ -136,5 +136,13 @@ export default function QuestionReviewPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function QuestionReviewPage() {
+  return (
+    <Suspense fallback={<div className="text-center py-12">加载中...</div>}>
+      <QuestionReviewContent />
+    </Suspense>
   );
 }
