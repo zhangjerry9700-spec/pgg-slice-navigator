@@ -80,16 +80,12 @@ export function useAuth(): UseAuthReturn {
 
         // 根据不同事件执行不同操作
         if (event === 'SIGNED_IN') {
-          // 检查是否需要数据迁移（只在首次登录时跳转，避免页面刷新重复跳转）
-          const hasLocalData = checkLocalData();
-          const hasMigrated = sessionStorage.getItem('pgg_data_migrated');
-          if (hasLocalData && !hasMigrated) {
-            sessionStorage.setItem('pgg_data_migrated', 'true');
-            router.push('/migrate');
-          }
+          // 登录成功后跳转到首页或指定页面
+          // 检查是否有重定向参数
+          const urlParams = new URLSearchParams(window.location.search);
+          const redirectTo = urlParams.get('redirect');
+          router.push(redirectTo || '/');
         } else if (event === 'SIGNED_OUT') {
-          // 清除迁移标记
-          sessionStorage.removeItem('pgg_data_migrated');
           router.push('/auth');
         }
       }
@@ -99,17 +95,6 @@ export function useAuth(): UseAuthReturn {
       subscription.unsubscribe();
     };
   }, [supabase, router]);
-
-  // 检查是否有本地数据需要迁移
-  const checkLocalData = useCallback((): boolean => {
-    if (typeof window === 'undefined') return false;
-
-    const masteryData = localStorage.getItem('pgg_mastery');
-    const mistakeBook = localStorage.getItem('pgg_mistakeBook');
-    const learningHistory = localStorage.getItem('pgg_learningHistory');
-
-    return !!(masteryData || mistakeBook || learningHistory);
-  }, []);
 
   // 注册
   const signUp = useCallback(async (

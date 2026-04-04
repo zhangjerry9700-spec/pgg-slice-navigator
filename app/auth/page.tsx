@@ -6,14 +6,14 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 
 // 表单类型：登录 | 注册 | 重置密码
 type AuthMode = 'signin' | 'signup' | 'forgot';
 
-export default function AuthPage() {
+function AuthForm() {
   const [mode, setMode] = useState<AuthMode>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -308,5 +308,17 @@ export default function AuthPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+        <div className="text-[var(--text-secondary)]">加载中...</div>
+      </div>
+    }>
+      <AuthForm />
+    </Suspense>
   );
 }

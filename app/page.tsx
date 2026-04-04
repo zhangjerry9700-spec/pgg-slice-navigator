@@ -360,6 +360,7 @@ export default function HomePage() {
                     count={reviewTask.length}
                     tagType="review"
                     sourceLabel="智能组卷"
+                    recommendation="系统精选多知识点题目，全面提升语法能力"
                     onStart={() => {
                       const validIds = reviewTask
                         .filter(q => q && q.id)
@@ -371,7 +372,6 @@ export default function HomePage() {
                       );
                       router.push('/practice');
                     }}
-                    compact
                   />
                 )}
                 {wrongAnswerQuestions && wrongAnswerQuestions.length > 0 && (
