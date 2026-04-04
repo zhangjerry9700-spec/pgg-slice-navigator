@@ -79,13 +79,8 @@ export function useAuth(): UseAuthReturn {
         });
 
         // 根据不同事件执行不同操作
-        if (event === 'SIGNED_IN') {
-          // 登录成功后跳转到首页或指定页面
-          // 检查是否有重定向参数
-          const urlParams = new URLSearchParams(window.location.search);
-          const redirectTo = urlParams.get('redirect');
-          router.push(redirectTo || '/');
-        } else if (event === 'SIGNED_OUT') {
+        // 注意：登录跳转在 signIn 函数中直接处理，避免重复跳转
+        if (event === 'SIGNED_OUT') {
           router.push('/auth');
         }
       }
@@ -151,7 +146,7 @@ export function useAuth(): UseAuthReturn {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -165,14 +160,28 @@ export function useAuth(): UseAuthReturn {
         return { error: translateAuthError(error.message) };
       }
 
-      setState(prev => ({ ...prev, isLoading: false }));
+      // 登录成功，更新状态
+      setState({
+        user: data.user,
+        session: data.session,
+        isLoading: false,
+        error: null,
+      });
+
+      // 立即处理跳转（不依赖 onAuthStateChange）
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectTo = urlParams.get('redirect');
+        router.push(redirectTo || '/');
+      }
+
       return { error: null };
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : '登录失败，请重试';
       setState(prev => ({ ...prev, isLoading: false, error: errorMsg }));
       return { error: errorMsg };
     }
-  }, [supabase]);
+  }, [supabase, router]);
 
   // 登出
   const signOut = useCallback(async (): Promise<void> => {
